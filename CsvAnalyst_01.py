@@ -67,6 +67,10 @@ def pandas_read_csv(file_name):
     df = pd.read_csv(file_name, header=None, sep=';')
     cnt_columns = df.shape[1]
     label_03['text'] = cnt_columns 
+    
+    # Вывод имен столбцов
+    column_names = [f"Столбец {i + 1}" for i in range(cnt_columns)]
+    label_05['text'] = ", ".join(column_names)
                     
     return df     
  
@@ -78,7 +82,7 @@ def process_button():
     
     headers = analyze_columns(df)
     for col_number, header in headers:
-        output_text.insert(tk.END, f"Столбец {col_number}: {header}\n")
+        output_text.insert(tk.END, f"Столбец {col_number + 1}: {header}\n")
         
 # Создание кнопки
 button=tk.Button(window, text="Прочитать файл", font=("Arial", 10, "bold"), bg='#ff0000', command=process_button)
