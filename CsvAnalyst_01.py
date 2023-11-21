@@ -48,15 +48,26 @@ def detect_headers(column):
         return 'телефон'
     else:
         return ''        
-         
+
+# Функция для определения заголовка столбца по содержимому
+def find_column(data):
+    headers = []
+    for col in range(data.shape[1]):
+        col_data = data.iloc[:, col]
+        is_email_column = col_data.astype(str).str.contains(r'@').any()
+        if is_email_column:
+            headers.append(col)
+    return headers    
+    
 # Функция для анализа столбцов
 def analyze_columns(df):
     headers = []
     for col_number, column in enumerate(df.columns):
         header = detect_headers(df[column])
         headers.append((col_number, header))
+         
     return headers
-           
+                          
 # Диалог открытия файла
 def do_dialog():
     name= fd.askopenfilename()
@@ -71,10 +82,14 @@ def pandas_read_csv(file_name):
     # Вывод имен столбцов
     column_names = [f"Столбец {i + 1}" for i in range(cnt_columns)]
     label_05['text'] = ", ".join(column_names)
-                    
-    return df     
- 
-# Обработчик нажатия кнопки
+    
+    # Расчет кол-ва строк со знаком @ в столбце email
+    count_rows_email = df.iloc[:, find_column(df)[0]].astype(str).str.contains(r'@').sum()
+    label_07['text'] = f"{count_rows_email} строк удовлетворяющих критерию" 
+    
+    return df 
+    
+    # Обработчик нажатия кнопки
 def process_button():
     file_name = do_dialog()
     label_01['text'] = file_name
@@ -83,7 +98,7 @@ def process_button():
     headers = analyze_columns(df)
     for col_number, header in headers:
         output_text.insert(tk.END, f"Столбец {col_number + 1}: {header}\n")
-        
+           
 # Создание кнопки
 button=tk.Button(window, text="Прочитать файл", font=("Arial", 10, "bold"), bg='#ff0000', command=process_button)
 button.grid(row=6, column=1)
