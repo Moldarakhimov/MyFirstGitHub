@@ -44,10 +44,10 @@ output_text.grid(row=5, column=1, padx=10, pady=10, sticky="W"+"E")
 def detect_headers(column):
     if any('@' in str(value) for value in column):
         return 'email'
-    elif any(char.isdigit() and not any(char in ('.', '/') for char in str(value)) and str(value).count(char) > 5 for value in column for char in str(value)):
+    elif any(not any(char in ('.', '/') for char in str(value)) and str(value).count(char) > 6 and char in '0123456789+-' for value in column for char in str(value)): 
         return 'phone'
     else:
-        return ''        
+        return ''
 
 # Функция для анализа столбцов
 def analyze_columns(df):
@@ -57,15 +57,22 @@ def analyze_columns(df):
         headers.append((col_number, header))
     return headers
     
-# Функция для поиска столбцов по содержимому
+# Функция для поиска столбцов email по содержимому
 def find_email(df):
-    headers = []
-    for col in range(df.shape[1]):
-        col_df = df.iloc[:, col]
-        email_column = col_df.astype(str).str.contains(r'@').any()
-        if email_column:
-            headers.append(col)
-    return headers
+    def contains_email(row):
+        return any('@' for char in row)
+    count_email = df.iloc[1:].apply(contains_email, axis=1).sum()
+    return count_email
+
+# Функция для поиска столбцов phone по содержимому
+def find_phone(df):
+    def contains_phone(row):
+        digit_count = sum(str(char).isdigit() for char in row)
+        plus_minus_count = sum(char in ['+', '-'] for char in row)
+        brackets_count = sum(char in ['(', ')'] for char in row)
+        return digit_count > 6 or (digit_count > 6 and (plus_minus_count > 0 or brackets_count > 0))
+    count_phone = df.iloc[1:].apply(contains_phone, axis=1).sum()
+    return count_phone
                                 
 # Диалог открытия файла
 def do_dialog():
@@ -85,10 +92,17 @@ def pandas_read_csv(file_name):
     # Расчет кол-ва строк со знаком @ в столбце email
     headers = find_email(df)
     if headers:
-        count_rows_email = df.iloc[:, headers[0]].astype(str).str.contains(r'@').sum()
-        label_07['text'] = f"{count_rows_email} строк удовлетворяющих критерию"
+        label_07['text'] = f"{headers} строк удовлетворяющих критерию"
     else:
         label_07['text'] = "Список не найден с символом @."
+               
+    # Расчет кол-ва строк со знаком +/-и цифрами в столбце phone
+    headers = find_phone(df)
+    if headers:
+        label_09['text'] = f"{headers} строк удовлетворяющих критерию"
+    else:
+        label_09['text'] = "Список не найден с номерами."
+
                
     return df 
     
