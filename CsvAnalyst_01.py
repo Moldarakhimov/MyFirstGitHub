@@ -21,7 +21,7 @@ label_02.grid(row=1, column=0, padx=10, pady=10, sticky="e")
 label_03 = tk.Label(text = "")
 label_03.grid(row=1, column=1, sticky="w")
 
-label_04 = tk.Label(text = "Name столбцов:")
+label_04 = tk.Label(text = "Name column:")
 label_04.grid(row=2, column=0, padx=10, pady=10, sticky="e")
 label_05 = tk.Label(text = "")
 label_05.grid(row=2, column=1, sticky="w")
@@ -31,7 +31,7 @@ label_06.grid(row=3, column=0, padx=10, pady=10, sticky="e")
 label_07 = tk.Label(text = "")
 label_07.grid(row=3, column=1, sticky="w")
 
-label_08 = tk.Label(text = "Телефон:")
+label_08 = tk.Label(text = "Phone:")
 label_08.grid(row=4, column=0, padx=10, pady=10, sticky="e")
 label_09 = tk.Label(text = "")
 label_09.grid(row=4, column=1, sticky="w")
@@ -40,34 +40,33 @@ label_09.grid(row=4, column=1, sticky="w")
 output_text = st(height = 20, width = 48)
 output_text.grid(row=5, column=1, padx=10, pady=10, sticky="W"+"E")
        
-# Функция для определения заголовков столбцов по содержимому
+# Функция для определения заголовки столбцов по их содержимому
 def detect_headers(column):
     if any('@' in str(value) for value in column):
         return 'email'
     elif any(char.isdigit() and not any(char in ('.', '/') for char in str(value)) and str(value).count(char) > 5 for value in column for char in str(value)):
-        return 'телефон'
+        return 'phone'
     else:
         return ''        
 
-# Функция для определения заголовка столбца по содержимому
-def find_column(data):
-    headers = []
-    for col in range(data.shape[1]):
-        col_data = data.iloc[:, col]
-        is_email_column = col_data.astype(str).str.contains(r'@').any()
-        if is_email_column:
-            headers.append(col)
-    return headers    
-    
 # Функция для анализа столбцов
 def analyze_columns(df):
     headers = []
     for col_number, column in enumerate(df.columns):
         header = detect_headers(df[column])
         headers.append((col_number, header))
-         
     return headers
-                          
+    
+# Функция для поиска столбцов по содержимому
+def find_email(df):
+    headers = []
+    for col in range(df.shape[1]):
+        col_df = df.iloc[:, col]
+        email_column = col_df.astype(str).str.contains(r'@').any()
+        if email_column:
+            headers.append(col)
+    return headers
+                                
 # Диалог открытия файла
 def do_dialog():
     name= fd.askopenfilename()
@@ -84,9 +83,13 @@ def pandas_read_csv(file_name):
     label_05['text'] = ", ".join(column_names)
     
     # Расчет кол-ва строк со знаком @ в столбце email
-    count_rows_email = df.iloc[:, find_column(df)[0]].astype(str).str.contains(r'@').sum()
-    label_07['text'] = f"{count_rows_email} строк удовлетворяющих критерию" 
-    
+    headers = find_email(df)
+    if headers:
+        count_rows_email = df.iloc[:, headers[0]].astype(str).str.contains(r'@').sum()
+        label_07['text'] = f"{count_rows_email} строк удовлетворяющих критерию"
+    else:
+        label_07['text'] = "Список не найден с символом @."
+               
     return df 
     
     # Обработчик нажатия кнопки
@@ -98,7 +101,7 @@ def process_button():
     headers = analyze_columns(df)
     for col_number, header in headers:
         output_text.insert(tk.END, f"Столбец {col_number + 1}: {header}\n")
-           
+            
 # Создание кнопки
 button=tk.Button(window, text="Прочитать файл", font=("Arial", 10, "bold"), bg='#ff0000', command=process_button)
 button.grid(row=6, column=1)
