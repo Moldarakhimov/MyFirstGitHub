@@ -44,7 +44,7 @@ output_text.grid(row=5, column=1, padx=10, pady=10, sticky="W"+"E")
 def detect_headers(column):
     if any('@' in str(value) for value in column):
         return 'email'
-    elif any(not any(char in ('.', '/') for char in str(value)) and str(value).count(char) > 6 and char in '0123456789+-' for value in column for char in str(value)): 
+    elif any(not any(char in ('.', '/') for char in str(value)) and str(value).count(char) > 6 and char in '0123456789+-' for value in column for char in '0123456789+-'): 
         return 'phone'
     else:
         return ''
@@ -59,20 +59,22 @@ def analyze_columns(df):
     
 # Функция для поиска столбцов email по содержимому
 def find_email(df):
-    def contains_email(row):
-        return any('@' for char in row)
-    count_email = df.iloc[1:].apply(contains_email, axis=1).sum()
+    def contains_email(column):
+        return any('@' in str(value) for value in column)
+    count_email = df.apply(contains_email, axis=1).sum()
     return count_email
 
 # Функция для поиска столбцов phone по содержимому
 def find_phone(df):
-    def contains_phone(row):
-        digit_count = sum(str(char).isdigit() for char in row)
-        plus_minus_count = sum(char in ['+', '-'] for char in row)
-        brackets_count = sum(char in ['(', ')'] for char in row)
-        return digit_count > 6 or (digit_count > 6 and (plus_minus_count > 0 or brackets_count > 0))
-    count_phone = df.iloc[1:].apply(contains_phone, axis=1).sum()
-    return count_phone
+    # Определить тип заголовка (например, 'phone') на основе данных в первой строке
+    header_type = analyze_columns(df)
+    phone_index = next((header[0] for header in header_type if header[1] == 'phone'), None)
+    # Если тип заголовка определен, подсчитать количество строк с данным типом
+    if phone_index is not None:
+        header_row = df.iloc[:, phone_index]
+        return header_row[0:].notna().sum()
+    else:
+        return 0
                                 
 # Диалог открытия файла
 def do_dialog():
@@ -81,7 +83,8 @@ def do_dialog():
    
 # Обработка csv файла при помощи pandas
 def pandas_read_csv(file_name):
-    df = pd.read_csv(file_name, header=None, sep=';')
+    df = pd.read_csv(file_name, sep=';')
+       
     cnt_columns = df.shape[1]
     label_03['text'] = cnt_columns 
     
@@ -103,10 +106,9 @@ def pandas_read_csv(file_name):
     else:
         label_09['text'] = "Список не найден с номерами."
 
-               
-    return df 
+    return df
     
-    # Обработчик нажатия кнопки
+# Обработчик нажатия кнопки
 def process_button():
     file_name = do_dialog()
     label_01['text'] = file_name
