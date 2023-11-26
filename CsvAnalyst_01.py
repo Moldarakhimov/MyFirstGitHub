@@ -59,14 +59,19 @@ def analyze_columns(df):
     
 # Функция для поиска столбцов email по содержимому
 def find_email(df):
-    def contains_email(column):
-        return any('@' in str(value) for value in column)
-    count_email = df.apply(contains_email, axis=1).sum()
-    return count_email
+    # Определить тип заголовка (например, 'phone') на основе данных в первой строке
+    header_type = analyze_columns(df)
+    email_index = next((header[0] for header in header_type if header[1] == 'email'), None)
+    # Если тип заголовка определен, подсчитать количество строк с данным типом
+    if email_index is not None:
+        header_row = df.iloc[:, email_index]
+        return header_row[0:].notna().sum()
+    else:
+        return 0
 
 # Функция для поиска столбцов phone по содержимому
 def find_phone(df):
-    # Определить тип заголовка (например, 'phone') на основе данных в первой строке
+    # Определить тип заголовка на основе данных
     header_type = analyze_columns(df)
     phone_index = next((header[0] for header in header_type if header[1] == 'phone'), None)
     # Если тип заголовка определен, подсчитать количество строк с данным типом
@@ -75,6 +80,53 @@ def find_phone(df):
         return header_row[0:].notna().sum()
     else:
         return 0
+
+#выборка столбца в список
+def get_column(df, column_ix):
+    cnt_rows = df.shape[0]
+    lst = []
+    for i in range(cnt_rows):
+        lst.append(df.iat[i,column_ix])
+    return lst
+    
+# Если в этом поле имя, пусть вернет True    
+def meet_name(field):
+    checkfor = ['Вера', 'Анатолий', 'Мария', 'Алексей', 'Валерия', 'Наталья', 'Оксана', 'Галина', 'Марина']
+    for s in checkfor:
+        if s in str(field): # Нашлось!
+            return True
+    # Ничего не совпало
+    return False
+
+# Если в этом списке многие элементы содержат имя, пусть вернет True    
+def list_meet_name(fields_list):
+    counter_total = 0
+    counter_meet = 0
+    for list_item in fields_list:
+        counter_total += 1
+        if meet_name(list_item):
+            counter_meet += 1
+    # Конец подсчета
+    ratio = counter_meet / counter_total
+    if ratio > 0:
+        return True, ratio
+    # Не набралось нужного количества совпадений
+    return False, ratio
+ 
+# Пройти все столбцы    
+def check_all_columns(df):
+    columns_cnt = df.shape[1]
+    for i in range(columns_cnt): # От 0 до columns_cnt-1
+        lst = get_column(df, i)
+        
+        # Первый критерий
+        result1 = list_meet_name(lst)
+        if result1[0]:
+            output_text.insert(tk.END, "В столбце " + str(i+1)
+                + " предположительно содержится имя." + os.linesep)
+            output_text.insert(tk.END, "Процент совпадений " + "{:.2f}".format(result1[1]*100)
+                + "%." + os.linesep + os.linesep)
+            continue # Все нашли, можно идти к следующему столбцу 
                                 
 # Диалог открытия файла
 def do_dialog():
@@ -117,6 +169,8 @@ def process_button():
     headers = analyze_columns(df)
     for col_number, header in headers:
         output_text.insert(tk.END, f"Столбец {col_number + 1}: {header}\n")
+    
+    check_all_columns(df)
             
 # Создание кнопки
 button=tk.Button(window, text="Прочитать файл", font=("Arial", 10, "bold"), bg='#ff0000', command=process_button)
