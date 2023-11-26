@@ -4,6 +4,7 @@ from tkinter.scrolledtext import ScrolledText as st
 from tkinter import filedialog as fd
 import os
 import pandas as pd
+import re
 
 # Создание главного окна
 window = tk.Tk()
@@ -218,6 +219,26 @@ def list_meet_gender(fields_list):
         return True, ratio
     # Не набралось нужного количества совпадений
     return False, ratio
+
+# Если в этом поле адрес, пусть вернет True    
+def meet_address(field):
+    address_pattern = re.compile(r'\b(?:ул\.|просп\.|бульв\.|пер\.|Av\.|St\.)\s*\S+')
+    return bool(re.search(address_pattern, str(field)))
+            
+# Если в этом списке многие элементы содержат адрес, пусть вернет True    
+def list_meet_address(fields_list):
+    counter_total = 0
+    counter_meet = 0
+    for list_item in fields_list:
+        counter_total += 1
+        if meet_address(list_item):
+            counter_meet += 1
+    # Конец подсчета
+    ratio = counter_meet / counter_total
+    if ratio > 0.01:
+        return True, ratio
+    # Не набралось нужного количества совпадений
+    return False, ratio
   
 # Пройти все столбцы    
 def check_all_columns(df):
@@ -276,6 +297,15 @@ def check_all_columns(df):
             output_text.insert(tk.END, "В столбце " + str(i+1)
                 + " предположительно содержится пол." + os.linesep)
             output_text.insert(tk.END, "Процент совпадений " + "{:.2f}".format(result5[1]*100)
+                + "%." + os.linesep + os.linesep)
+            continue # Все нашли, можно идти к следующему столбцу
+        
+        # Шестой критерий
+        result6 = list_meet_address(lst)
+        if result6[0]:
+            output_text.insert(tk.END, "В столбце " + str(i+1)
+                + " предположительно содержится адрес." + os.linesep)
+            output_text.insert(tk.END, "Процент совпадений " + "{:.2f}".format(result6[1]*100)
                 + "%." + os.linesep + os.linesep)
             continue # Все нашли, можно идти к следующему столбцу
                             
