@@ -108,7 +108,7 @@ def list_meet_name(fields_list):
             counter_meet += 1
     # Конец подсчета
     ratio = counter_meet / counter_total
-    if ratio > 0:
+    if ratio > 0.01:
         return True, ratio
     # Не набралось нужного количества совпадений
     return False, ratio
@@ -117,11 +117,19 @@ def list_meet_name(fields_list):
 def meet_last_name(field):
     checkfor = ['ов', 'ова']
     field_str = str(field)
-    for s in checkfor:
-        if str(field).endswith(s): # Нашлось!
-            return True
+    # Проверяем количество слов в строке
+    if len(field_str.split()) == 2:
+        for s in checkfor:
+            if s in field_str or field_str.endswith(s): # Нашлось!
+                return True
+    else:
+        # Если в строке одно слово, применяем ваш текущий код
+        for s in checkfor:
+            if str(field).endswith(s):
+                return True
     # Ничего не совпало
     return False
+
 
 # Если в этом списке многие элементы содержат фамилия, пусть вернет True    
 def list_meet_last_name(fields_list):
@@ -133,14 +141,14 @@ def list_meet_last_name(fields_list):
             counter_meet += 1
     # Конец подсчета
     ratio = counter_meet / counter_total
-    if ratio > 0:
+    if ratio > 0.01:
         return True, ratio
     # Не набралось нужного количества совпадений
     return False, ratio
 
 # Если в этом поле Фамилия по окончаниям, пусть вернет True    
 def meet_middle_name(field):
-    checkfor = ['ич', 'на']
+    checkfor = ['вич', 'вна']
     field_str = str(field)
     for s in checkfor:
         if str(field).endswith(s): # Нашлось!
@@ -158,6 +166,54 @@ def list_meet_middle_name(fields_list):
             counter_meet += 1
     # Конец подсчета
     ratio = counter_meet / counter_total
+    if ratio > 0.01:
+        return True, ratio
+    # Не набралось нужного количества совпадений
+    return False, ratio
+
+def meet_link(field):
+    checkfor = ['http://', 'https://']
+    field_str = str(field)
+    for s in checkfor:
+        if str(field).startswith(s): # Нашлось!
+            return True
+    # Ничего не совпало
+    return False
+
+# Если в этом списке многие элементы содержат keywords адреса, пусть вернет True    
+def list_meet_link(fields_list):
+    counter_total = 0
+    counter_meet = 0
+    for list_item in fields_list:
+        counter_total += 1
+        if meet_link(list_item):
+            counter_meet += 1
+    # Конец подсчета
+    ratio = counter_meet / counter_total
+    if ratio > 0:
+        return True, ratio
+    # Не набралось нужного количества совпадений
+    return False, ratio
+
+# Если в этом поле имя, пусть вернет True    
+def meet_gender(field):
+    checkfor = ['муж', 'жен', 'пол']
+    for s in checkfor:
+        if str(field).endswith(s): # Нашлось!
+            return True
+    # Ничего не совпало
+    return False
+
+# Если в этом списке многие элементы содержат имя, пусть вернет True    
+def list_meet_gender(fields_list):
+    counter_total = 0
+    counter_meet = 0
+    for list_item in fields_list:
+        counter_total += 1
+        if meet_gender(list_item):
+            counter_meet += 1
+    # Конец подсчета
+    ratio = counter_meet / counter_total
     if ratio > 0:
         return True, ratio
     # Не набралось нужного количества совпадений
@@ -169,37 +225,60 @@ def check_all_columns(df):
     for i in range(columns_cnt): # От 0 до columns_cnt-1
         lst = get_column(df, i)
         
-        # Первый критерий
+        # Первый, второй и третий критерии
         result1 = list_meet_name(lst)
+        result2 = list_meet_last_name(lst)
+        result3 = list_meet_middle_name(lst)
+        
+        # Если оба критерия обнаружены, выведите информацию об обоих
+        if result2[0] and result1[0]:
+            output_text.insert(tk.END, "В столбце " + str(i+1)
+                + " обнаружены и имя, и фамилия." + os.linesep)
+            output_text.insert(tk.END, "Процент совпадений имени: " + "{:.2f}".format(result1[1]*100)
+                + "%." + os.linesep)
+            output_text.insert(tk.END, "Процент совпадений фамилии: " + "{:.2f}".format(result2[1]*100)
+                + "%." + os.linesep + os.linesep)
+            continue # Все нашли, можно идти к следующему столбцу
+                    
         if result1[0]:
             output_text.insert(tk.END, "В столбце " + str(i+1)
                 + " предположительно содержится имя." + os.linesep)
             output_text.insert(tk.END, "Процент совпадений " + "{:.2f}".format(result1[1]*100)
                 + "%." + os.linesep + os.linesep)
-            continue # Все нашли, можно идти к следующему столбцу 
-        
-        # Второй критерий
-        result2 = list_meet_last_name(lst)
+            continue # Все нашли, можно идти к следующему столбцу
+                                                     
         if result2[0]:
             output_text.insert(tk.END, "В столбце " + str(i+1)
                 + " предположительно содержится фамилия." + os.linesep)
             output_text.insert(tk.END, "Процент совпадений " + "{:.2f}".format(result2[1]*100)
                 + "%." + os.linesep + os.linesep)
             continue # Все нашли, можно идти к следующему столбцу
-        
-        # Соответствия критериям не найдено
-        output_text.insert(tk.END, "Предположений для столбца " + str(i+1)
-            + " не найдено." + os.linesep + os.linesep)
-        
-        # Второй критерий
-        result3 = list_meet_middle_name(lst)
+                            
         if result3[0]:
             output_text.insert(tk.END, "В столбце " + str(i+1)
-                + " предположительно содержится фамилия." + os.linesep)
+                + " предположительно содержится отчество." + os.linesep)
             output_text.insert(tk.END, "Процент совпадений " + "{:.2f}".format(result3[1]*100)
                 + "%." + os.linesep + os.linesep)
             continue # Все нашли, можно идти к следующему столбцу
         
+        # Четвертый критерий
+        result4 = list_meet_link(lst)
+        if result4[0]:
+            output_text.insert(tk.END, "В столбце " + str(i+1)
+                + " предположительно содержится ссылка." + os.linesep)
+            output_text.insert(tk.END, "Процент совпадений " + "{:.2f}".format(result4[1]*100)
+                + "%." + os.linesep + os.linesep)
+            continue # Все нашли, можно идти к следующему столбцу
+        
+         # Пятый критерий
+        result5 = list_meet_gender(lst)
+        if result5[0]:
+            output_text.insert(tk.END, "В столбце " + str(i+1)
+                + " предположительно содержится пол." + os.linesep)
+            output_text.insert(tk.END, "Процент совпадений " + "{:.2f}".format(result5[1]*100)
+                + "%." + os.linesep + os.linesep)
+            continue # Все нашли, можно идти к следующему столбцу
+                            
         # Соответствия критериям не найдено
         output_text.insert(tk.END, "Предположений для столбца " + str(i+1)
             + " не найдено." + os.linesep + os.linesep)
