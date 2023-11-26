@@ -137,7 +137,32 @@ def list_meet_last_name(fields_list):
         return True, ratio
     # Не набралось нужного количества совпадений
     return False, ratio
- 
+
+# Если в этом поле Фамилия по окончаниям, пусть вернет True    
+def meet_middle_name(field):
+    checkfor = ['ич', 'на']
+    field_str = str(field)
+    for s in checkfor:
+        if str(field).endswith(s): # Нашлось!
+            return True
+    # Ничего не совпало
+    return False
+
+# Если в этом списке многие элементы содержат фамилия, пусть вернет True    
+def list_meet_middle_name(fields_list):
+    counter_total = 0
+    counter_meet = 0
+    for list_item in fields_list:
+        counter_total += 1
+        if meet_middle_name(list_item):
+            counter_meet += 1
+    # Конец подсчета
+    ratio = counter_meet / counter_total
+    if ratio > 0:
+        return True, ratio
+    # Не набралось нужного количества совпадений
+    return False, ratio
+  
 # Пройти все столбцы    
 def check_all_columns(df):
     columns_cnt = df.shape[1]
@@ -159,6 +184,19 @@ def check_all_columns(df):
             output_text.insert(tk.END, "В столбце " + str(i+1)
                 + " предположительно содержится фамилия." + os.linesep)
             output_text.insert(tk.END, "Процент совпадений " + "{:.2f}".format(result2[1]*100)
+                + "%." + os.linesep + os.linesep)
+            continue # Все нашли, можно идти к следующему столбцу
+        
+        # Соответствия критериям не найдено
+        output_text.insert(tk.END, "Предположений для столбца " + str(i+1)
+            + " не найдено." + os.linesep + os.linesep)
+        
+        # Второй критерий
+        result3 = list_meet_middle_name(lst)
+        if result3[0]:
+            output_text.insert(tk.END, "В столбце " + str(i+1)
+                + " предположительно содержится фамилия." + os.linesep)
+            output_text.insert(tk.END, "Процент совпадений " + "{:.2f}".format(result3[1]*100)
                 + "%." + os.linesep + os.linesep)
             continue # Все нашли, можно идти к следующему столбцу
         
